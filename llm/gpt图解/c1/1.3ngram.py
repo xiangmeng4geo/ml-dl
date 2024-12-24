@@ -2,29 +2,39 @@
 from collections import defaultdict, Counter
 import random
 
+import jieba
 
-def tokenize(text):
+
+def tokenizer(text):
     return [char for char in text]
 
 
+def jieba_tokenizer(text):
+    return jieba.lcut(text)
+
+
 class NGramModel:
-    def __init__(self, n):
+    def __init__(self, n, tokenize=tokenizer):
         self.n = n
         self.ngrams = defaultdict(Counter)
+        self.tokenize = tokenize
 
     def train(self, sentences):
         for sentence in sentences:
             # tokens = list(sentence)
-            tokens = tokenize(sentence)
+            tokens = self.tokenize(sentence)
             for i in range(len(tokens) - self.n + 1):
                 gram = tuple(tokens[i:i + self.n - 1])
                 next_token = tokens[i + self.n - 1]
                 self.ngrams[gram][next_token] += 1
 
     def predict(self, context):
+        if isinstance(context, str):
+            context = [context]
         context = tuple(context)
         if context in self.ngrams:
-            return self.ngrams[context].most_common(1)[0][0]
+            most = self.ngrams[context].most_common(1)[0][0]
+            return most
         else:
             return random.choice(list(self.ngrams.keys()))[0]
 
@@ -54,7 +64,7 @@ if __name__ == "__main__":
         "他爱吃百香果"
     ]
 
-    ngram_model = NGramModel(2)
+    ngram_model = NGramModel(2, jieba_tokenizer)
     ngram_model.train(demo_sentences)
 
     # 预测下一个词
