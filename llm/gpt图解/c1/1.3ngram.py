@@ -24,9 +24,10 @@ class NGramModel:
             # tokens = list(sentence)
             tokens = self.tokenize(sentence)
             for i in range(len(tokens) - self.n + 1):
-                gram = tuple(tokens[i:i + self.n - 1])
-                next_token = tokens[i + self.n - 1]
-                self.ngrams[gram][next_token] += 1
+                gram = tuple(tokens[i:i + self.n])
+                prefix = gram[:-1]
+                next_token = gram[-1]
+                self.ngrams[prefix][next_token] += 1
 
     def predict(self, context):
         if isinstance(context, str):
@@ -64,12 +65,12 @@ if __name__ == "__main__":
         "他爱吃百香果"
     ]
 
-    ngram_model = NGramModel(2, jieba_tokenizer)
+    ngram_model = NGramModel(3, jieba_tokenizer)
     ngram_model.train(demo_sentences)
 
     # 预测下一个词
-    input_context = ["我"]
+    input_context = ["我", "喜欢"]
     for i in range(10):
-        next_word = ngram_model.predict(input_context[-1])
+        next_word = ngram_model.predict(input_context[(-ngram_model.n+1):])
         input_context.append(next_word)
         print("".join(input_context))
