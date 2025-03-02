@@ -1,40 +1,31 @@
-from llama_index import VectorStoreIndex, SimpleDirectoryReader, ServiceContext
-from llama_index.llms import Ollama
+from llama_index.core import StorageContext, SimpleDirectoryReader, VectorStoreIndex, load_index_from_storage
+from llama_index.llms.ollama import Ollama
+
 from config import DOCS_DIR, INDEX_DIR, OLLAMA_BASE_URL, MODEL_NAME
 import os
+
 
 class RAGSystem:
     def __init__(self):
         # 初始化Ollama LLM
         self.llm = Ollama(model=MODEL_NAME, base_url=OLLAMA_BASE_URL)
-        
-        # 创建ServiceContext
-        self.service_context = ServiceContext.from_defaults(
-            llm=self.llm,
-            chunk_size=512,
-            chunk_overlap=128
-        )
 
         # 加载或创建索引
         self.index = self._load_or_create_index()
 
     def _load_or_create_index(self):
         # 如果已有索引文件，直接加载
-        index_file = os.path.join(INDEX_DIR, "index.json")
-        if os.path.exists(index_file):
-            return VectorStoreIndex.load_from_disk(
-                index_file,
-                service_context=self.service_context
-            )
-        
+        if os.path.exists(INDEX_DIR):
+            storage_context = StorageContext.from_defaults(persist_dir=INDEX_DIR)
+            return load_index_from_storage(storage_context)
+
         # 否则创建新索引
         documents = SimpleDirectoryReader(DOCS_DIR).load_data()
         index = VectorStoreIndex.from_documents(
             documents,
-            service_context=self.service_context
         )
         # 保存索引
-        index.storage_context.persist(persist_dir=index_file)
+        index.storage_context.persist(persist_dir=INDEX_DIR)
         return index
 
     def query(self, question: str) -> str:
